@@ -71,8 +71,9 @@
           let speedunit_segment = data.active[filename].speedunit_segment;
           let remaining_time = data.active[filename].remaining_time;
           let remaining_time_2 = data.active[filename].remaining_time_2;
+          let filesize = data.active[filename].filesize;
           let div = document.createElement("div");
-          div.innerHTML = `${filename}: ${progress}% | ${speed} ${speedunit}
+          div.innerHTML = `${filename} (${filesize}): ${progress}% | ${speed} ${speedunit}
             <progress value="${progress}" max="100"></progress> ${remaining_time}
             <button onclick="cancelDownload('${filename}')">Abbrechen</button> ${speed_segment} ${speedunit_segment} ${remaining_time_2}`;
           progressContainer.appendChild(div);
