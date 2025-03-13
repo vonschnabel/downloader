@@ -70,6 +70,19 @@ def download_file(url, filename):
 
   response = requests.get(url, stream=True, timeout=10)
   total_size = int(response.headers.get("content-length", 0))
+  speedunits = ["B/s","KB/s","MB/s","GB/s"]
+  filesizeunits = ["B","KB","MB","GB"]
+  filesizeunit = ""
+  filesize = total_size
+  var_counts = 0
+  while((filesize > 1024) and var_counts < 4):
+    filesize = filesize / 1024
+    var_counts += 1
+  if var_counts < 3:
+    filesizeunit = filesizeunits[var_counts]
+  else:
+    filesizeunit = "Unbekannt"
+  filesize = str(round(filesize,2)) +" " +filesizeunit  
   downloaded = 0
   downloaded_segment = 0
   cancel_flags[filename] = threading.Event()
@@ -98,8 +111,7 @@ def download_file(url, filename):
           segment = 0
           print("foo")
         elapsed_time_segment = time.time() - start_time_segment
-#        speed = (downloaded / elapsed_time) / 1024 if elapsed_time > 0 else 0  # KB/s
-        speedunits = ["B/s","KB/s","MB/s","GB/s"]
+#        speed = (downloaded / elapsed_time) / 1024 if elapsed_time > 0 else 0  # KB/s        
         speedunit = ""
         speedunit_segment = ""
         if elapsed_time > 0:
@@ -139,7 +151,8 @@ def download_file(url, filename):
           "speedunit": speedunit,
           "speedunit_segment": speedunit_segment,
           "remaining_time": remaining_time,
-          "remaining_time_2": remaining_time_2
+          "remaining_time_2": remaining_time_2,
+          "filesize": filesize
         }
 
         segment += 1
@@ -153,7 +166,7 @@ def start_next_download():
   if len(active_downloads) < number_of_max_workers and download_queue:
     url, filename = download_queue.pop(0)
 #    active_downloads[filename] = {"progress": 0, "speed": 0}
-    active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed": 0, "speed_segment": 0, "speedunit": "", "speedunit_segment": "", "remaining_time": "", "remaining_time_2": ""}
+    active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed": 0, "speed_segment": 0, "speedunit": "", "speedunit_segment": "", "remaining_time": "", "remaining_time_2": "", "filesize": ""}
     executor.submit(download_file, url, filename)
 
 @app.route("/")
