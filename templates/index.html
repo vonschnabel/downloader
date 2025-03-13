@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Downloader</title>
+  <script>
+    function addInputField() {
+      let container = document.getElementById("input-container");
+      let div = document.createElement("div");
+      div.className = "input-row";
+
+      let inputUrl = document.createElement("input");
+      inputUrl.type = "text";
+      inputUrl.placeholder = "Download-URL eingeben";
+      inputUrl.className = "url-input";
+
+      let inputTitle = document.createElement("input");
+      inputTitle.type = "text";
+      inputTitle.placeholder = "Optional: Dateiname (ohne Endung)";
+      inputTitle.className = "title-input";
+
+      div.appendChild(inputUrl);
+      div.appendChild(inputTitle);
+      container.appendChild(div);
+    }
+
+    function startDownload() {
+      let rows = document.querySelectorAll(".input-row");
+      rows.forEach(row => {
+        let urlInput = row.querySelector(".url-input");
+        let titleInput = row.querySelector(".title-input");
+
+        if (urlInput.value.trim() !== "") {
+          fetch("/download", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: urlInput.value,
+              title: titleInput.value.trim()
+            })
+          }).then(response => response.json())
+            .then(data => console.log(data));
+        }
+      });
+    }
+
+    function updateStatus() {
+    fetch("/status")
+      .then(response => response.json())
+      .then(data => {
+        let queueContainer = document.getElementById("queue-container");
+        let progressContainer = document.getElementById("progress-container");
+
+        queueContainer.innerHTML = "<h2>Warteschlange:</h2>";
+        progressContainer.innerHTML = "<h2>Laufende Downloads:</h2>";
+
+        data.queue.forEach(file => {
+          let div = document.createElement("div");
+          div.innerHTML = `${file.filename}
+            <button onclick="removeFromQueue('${file.filename}')">Entfernen</button>`;
+          queueContainer.appendChild(div);
+        });
+
+        Object.entries(data.active).forEach(([filename]) => {
+          console.log(data.active[filename].total_size);
+          let progress = data.active[filename].progress;
+          let speed = data.active[filename].speed;
+          let speed_segment = data.active[filename].speed_segment;
+          let speedunit = data.active[filename].speedunit;
+          let speedunit_segment = data.active[filename].speedunit_segment;
+          let remaining_time = data.active[filename].remaining_time;
+          let remaining_time_2 = data.active[filename].remaining_time_2;
+          let div = document.createElement("div");
+          div.innerHTML = `${filename}: ${progress}% | ${speed} ${speedunit}
+            <progress value="${progress}" max="100"></progress> ${remaining_time}
+            <button onclick="cancelDownload('${filename}')">Abbrechen</button> ${speed_segment} ${speedunit_segment} ${remaining_time_2}`;
+          progressContainer.appendChild(div);
+        });
+      });
+  }
+
+    function removeFromQueue(filename) {
+      fetch("/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: filename })
+      }).then(response => response.json())
+        .then(data => {
+          console.log(data);
+          updateStatus();
+        });
+    }
+
+    function cancelDownload(filename) {
+      fetch("/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: filename })
+      }).then(response => response.json())
+        .then(data => {
+          console.log(data);
+          updateStatus();
+        });
+    }
+
+    setInterval(updateStatus, 2000);
+  </script>
+</head>
+<body>
+  <h1>File Downloader</h1>
+  <div id="input-container"></div>
+  <button onclick="addInputField()">Weitere URL hinzufügen</button>
+  <button onclick="startDownload()">Download starten</button>
+
+  <div id="queue-container"><h2>Warteschlange:</h2></div>
+  <div id="progress-container"><h2>Laufende Downloads:</h2></div>
+</body>
+</html>
