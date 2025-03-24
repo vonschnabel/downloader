@@ -111,7 +111,11 @@
 <body>
   <h1>File Downloader</h1>
   <a href="/downloads">Downloads</a>  <br><br>
-  <div id="input-container"></div>
+  <div id="input-container">
+    <div class="input-row">
+      <input type="text" placeholder="Download-URL eingeben" class="url-input"><input type="text" placeholder="Optional: Dateiname (ohne Endung)" class="title-input">
+    </div>
+  </div>
   <button onclick="addInputField()">Weitere URL hinzufügen</button>
   <button onclick="startDownload()">Download starten</button>
 
