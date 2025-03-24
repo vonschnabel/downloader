@@ -1,7 +1,7 @@
 import os
 import requests
 import time
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, render_template
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from urllib.parse import urlparse
@@ -366,6 +366,23 @@ def cancel_download():
     return jsonify({"status": "cancelled", "filename": filename})
 
   return jsonify({"status": "error", "message": "Download not found"})
+
+@app.route("/files")
+def list_files():
+    """Listet alle heruntergeladenen Dateien auf."""
+    files = os.listdir(download_folder)
+    return jsonify({"files": files})
+
+@app.route("/files/<filename>")
+def get_file(filename):
+    """Ermöglicht das Herunterladen von Dateien aus dem 'downloads'-Ordner."""
+    return send_from_directory(download_folder, filename, as_attachment=True)
+
+@app.route("/downloads")
+def downloads_page():
+    """Zeigt eine Liste der heruntergeladenen Dateien als HTML-Seite."""
+    files = os.listdir(download_folder)
+    return render_template("files.html", files=files)
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=5000, debug=True)
