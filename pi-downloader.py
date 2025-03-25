@@ -109,7 +109,7 @@ def download_file(url, filename):
       downloaded_segment = 0
       cancel_flags[filename] = threading.Event()
       start_time = time.time()
-      start_time_segment = start_time
+      #start_time_segment = start_time
       number_of_segments = 25000
       segment = 0
 
@@ -124,7 +124,7 @@ def download_file(url, filename):
             start_next_download()
             return
 
-          
+          start_time_segment = time.time()
           end = min(downloaded + chunk_size - 1, total_size - 1)
           headers["Range"] = f"bytes={downloaded}-{end}"
 
@@ -132,15 +132,15 @@ def download_file(url, filename):
           if response.status_code in [200, 206]:  # 206 = Partial Content
             file.write(response.content)
             downloaded += len(response.content)
-            downloaded_segment += len(response.content)
+            downloaded_segment = len(response.content)
             print(f"Heruntergeladen: {downloaded}/{total_size} Bytes")
 
             elapsed_time = time.time() - start_time
-            if segment >= number_of_segments:
-              start_time_segment = time.time()
-              downloaded_segment = len(chunk)
-              segment = 0
-              print("foo")
+            #if segment >= number_of_segments:
+            #  start_time_segment = time.time()
+            #  downloaded_segment = len(chunk)
+            #  segment = 0
+            #  print("foo")
             elapsed_time_segment = time.time() - start_time_segment
 
             speedunit = ""
@@ -172,7 +172,7 @@ def download_file(url, filename):
               speed = 0
 
             remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-            remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded_segment)
+            remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
             active_downloads[filename] = {
               "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
               "downloaded": downloaded,
