@@ -100,7 +100,7 @@ def download_file(url, filename):
       while((filesize > 1024) and var_counts < 4):
         filesize = filesize / 1024
         var_counts += 1
-      if var_counts < 3:
+      if var_counts <= 3:
         filesizeunit = filesizeunits[var_counts]
       else:
         filesizeunit = "Unbekannt"
@@ -151,7 +151,7 @@ def download_file(url, filename):
               while((speed > 1024) and var_counts < 4):
                 speed = speed / 1024
                 var_counts += 1
-              if var_counts < 3:
+              if var_counts <= 3:
                 speedunit = speedunits[var_counts]
               else:
                 speedunit = "Unbekannt"
@@ -164,7 +164,7 @@ def download_file(url, filename):
               while((speed_segment > 1024) and var_counts < 4):
                 speed_segment = speed_segment / 1024
                 var_counts += 1
-              if var_counts < 3:
+              if var_counts <= 3:
                 speedunit_segment = speedunits[var_counts]
               else:
                 speedunit_segment = "Unbekannt"
@@ -206,7 +206,7 @@ def download_file(url, filename):
     while((filesize > 1024) and var_counts < 4):
       filesize = filesize / 1024
       var_counts += 1
-    if var_counts < 3:
+    if var_counts <= 3:
       filesizeunit = filesizeunits[var_counts]
     else:
       filesizeunit = "Unbekannt"
@@ -248,7 +248,7 @@ def download_file(url, filename):
             while((speed > 1024) and var_counts < 4):
               speed = speed / 1024
               var_counts += 1
-            if var_counts < 3:
+            if var_counts <= 3:
               speedunit = speedunits[var_counts]
             else:
               speedunit = "Unbekannt"
@@ -261,7 +261,7 @@ def download_file(url, filename):
             while((speed_segment > 1024) and var_counts < 4):
               speed_segment = speed_segment / 1024
               var_counts += 1
-            if var_counts < 3:
+            if var_counts <= 3:
               speedunit_segment = speedunits[var_counts]
             else:
               speedunit_segment = "Unbekannt"
@@ -269,7 +269,7 @@ def download_file(url, filename):
             speed = 0
 
           remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-          remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded_segment)
+          remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
           active_downloads[filename] = {
   #          "progress": int((downloaded / total_size) * 100) if total_size else 0,
             "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
@@ -306,8 +306,7 @@ def start_download():
   """Fügt eine Datei zur Warteschlange hinzu, wenn sie erlaubt ist."""
   data = request.json
   url = data.get("url")
-  custom_title = data.get("title")
-  print("custom_title",custom_title) ###
+  custom_title = data.get("title")  
 
   parsed_url = urlparse(url)
   if(parsed_url.hostname == "www.mediathek.at"):
@@ -316,12 +315,10 @@ def start_download():
     audio_tag = soup.find('audio')
     data_src = audio_tag['data-src']
     title = soup.find('h1', class_ = "fw-700")
-    title = title.text
-    print("title",title) ###
+    title = title.text    
     #parsed_url = urlparse(data_src)
     if(custom_title == ""):
-      custom_title = title
-    print("custom_title",custom_title) ###
+      custom_title = title    
     #filename = extract_filename(parsed_url, custom_title)
     filename = extract_filename(data_src, custom_title)
     if filename and not any(entry[0] == url for entry in download_queue) and filename not in active_downloads:
