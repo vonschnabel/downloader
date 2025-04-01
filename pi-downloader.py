@@ -7,6 +7,8 @@ import threading
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
+forbidden_chars = ['<', '>', '|', '/', '\\', ':', '"', '?', '*']
+
 download_folder = "downloads"
 os.makedirs(download_folder, exist_ok=True)
 
@@ -293,7 +295,9 @@ def start_next_download():
   """Startet den nächsten Download aus der Warteschlange, falls Kapazität frei ist."""
   if len(active_downloads) < number_of_max_workers and download_queue:
     url, filename = download_queue.pop(0)
-#    active_downloads[filename] = {"progress": 0, "speed": 0}
+    for char in forbidden_chars:
+      filename = filename.replace(char, '_')
+
     active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed": 0, "speed_segment": 0, "speedunit": "", "speedunit_segment": "", "remaining_time": "", "remaining_time_2": "", "filesize": ""}
     executor.submit(download_file, url, filename)
 
@@ -366,20 +370,20 @@ def cancel_download():
 
 @app.route("/files")
 def list_files():
-    """Listet alle heruntergeladenen Dateien auf."""
-    files = os.listdir(download_folder)
-    return jsonify({"files": files})
+  """Listet alle heruntergeladenen Dateien auf."""
+  files = os.listdir(download_folder)
+  return jsonify({"files": files})
 
 @app.route("/files/<filename>")
 def get_file(filename):
-    """Ermöglicht das Herunterladen von Dateien aus dem 'downloads'-Ordner."""
-    return send_from_directory(download_folder, filename, as_attachment=True)
+  """Ermöglicht das Herunterladen von Dateien aus dem 'downloads'-Ordner."""
+  return send_from_directory(download_folder, filename, as_attachment=True)
 
 @app.route("/downloads")
 def downloads_page():
-    """Zeigt eine Liste der heruntergeladenen Dateien als HTML-Seite."""
-    files = os.listdir(download_folder)
-    return render_template("files.html", files=files)
+  """Zeigt eine Liste der heruntergeladenen Dateien als HTML-Seite."""
+  files = sorted(os.listdir(download_folder))
+  return render_template("files.html", files=files)
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=5000, debug=True)
