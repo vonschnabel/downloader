@@ -65,17 +65,17 @@
         Object.entries(data.active).forEach(([filename]) => {
           console.log(data.active[filename].total_size);
           let progress = data.active[filename].progress;
-          let speed = data.active[filename].speed;
+          //let speed = data.active[filename].speed;
           let speed_segment = data.active[filename].speed_segment;
-          let speedunit = data.active[filename].speedunit;
+          //let speedunit = data.active[filename].speedunit;
           let speedunit_segment = data.active[filename].speedunit_segment;
           let remaining_time = data.active[filename].remaining_time;
-          let remaining_time_2 = data.active[filename].remaining_time_2;
+          //let remaining_time_2 = data.active[filename].remaining_time_2;
           let filesize = data.active[filename].filesize;
           let div = document.createElement("div");
-          div.innerHTML = `${filename} (${filesize}): ${progress}% | ${speed} ${speedunit}
+          div.innerHTML = `${filename} (${filesize}): ${progress}% | ${speed_segment} ${speedunit_segment}
             <progress value="${progress}" max="100"></progress> ${remaining_time}
-            <button onclick="cancelDownload('${filename}')">Abbrechen</button> ${speed_segment} ${speedunit_segment} ${remaining_time_2}`;
+            <button onclick="cancelDownload('${filename}')">Abbrechen</button>`;
           progressContainer.appendChild(div);
         });
       });

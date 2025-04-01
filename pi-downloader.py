@@ -20,7 +20,7 @@ download_queue = []  # Warteschlange als Liste mit (url, filename)
 active_downloads = {}  # Aktive Downloads {filename: {"progress": int, "speed": float}}
 cancel_flags = {}
 
-allowed_files = {".mp4", ".mp3"}  # Erlaubte Dateiendungen
+allowed_files = {".mp4", ".mp3", "m4a", "mpg", "flv", "wav", "avi", "zip", "7z", "gz"}  # Erlaubte Dateiendungen
 
 def get_unique_filename(filename):
   """Überprüft, ob die Datei bereits existiert, und fügt eine Nummer an, falls nötig."""
@@ -145,20 +145,20 @@ def download_file(url, filename):
             #  print("foo")
             elapsed_time_segment = time.time() - start_time_segment
 
-            speedunit = ""
+            #speedunit = ""
             speedunit_segment = ""
-            if elapsed_time > 0:
-              var_counts = 0
-              speed = (downloaded / elapsed_time)
-              while((speed > 1024) and var_counts < 4):
-                speed = speed / 1024
-                var_counts += 1
-              if var_counts <= 3:
-                speedunit = speedunits[var_counts]
-              else:
-                speedunit = "Unbekannt"
-            else:
-              speed = 0
+            # if elapsed_time > 0:
+            #   var_counts = 0
+            #   speed = (downloaded / elapsed_time)
+            #   while((speed > 1024) and var_counts < 4):
+            #     speed = speed / 1024
+            #     var_counts += 1
+            #   if var_counts <= 3:
+            #     speedunit = speedunits[var_counts]
+            #   else:
+            #     speedunit = "Unbekannt"
+            # else:
+            #   speed = 0
 
             if elapsed_time_segment > 0:
               var_counts = 0
@@ -171,19 +171,20 @@ def download_file(url, filename):
               else:
                 speedunit_segment = "Unbekannt"
             else:
-              speed = 0
+              speed_segment = 0
 
-            remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-            remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
+            #remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
+            #remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
+            remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
             active_downloads[filename] = {
               "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
               "downloaded": downloaded,
-              "speed": round(speed, 2),
+              #"speed": round(speed, 2),
               "speed_segment": round(speed_segment, 2),
-              "speedunit": speedunit,
+              #"speedunit": speedunit,
               "speedunit_segment": speedunit_segment,
               "remaining_time": remaining_time,
-              "remaining_time_2": remaining_time_2,
+              #"remaining_time_2": remaining_time_2,
               "filesize": filesize
             }
 
@@ -242,20 +243,20 @@ def download_file(url, filename):
             print("foo")
           elapsed_time_segment = time.time() - start_time_segment
   #        speed = (downloaded / elapsed_time) / 1024 if elapsed_time > 0 else 0  # KB/s        
-          speedunit = ""
+          #speedunit = ""
           speedunit_segment = ""
-          if elapsed_time > 0:
-            var_counts = 0
-            speed = (downloaded / elapsed_time)
-            while((speed > 1024) and var_counts < 4):
-              speed = speed / 1024
-              var_counts += 1
-            if var_counts <= 3:
-              speedunit = speedunits[var_counts]
-            else:
-              speedunit = "Unbekannt"
-          else:
-            speed = 0
+          # if elapsed_time > 0:
+          #   var_counts = 0
+          #   speed = (downloaded / elapsed_time)
+          #   while((speed > 1024) and var_counts < 4):
+          #     speed = speed / 1024
+          #     var_counts += 1
+          #   if var_counts <= 3:
+          #     speedunit = speedunits[var_counts]
+          #   else:
+          #     speedunit = "Unbekannt"
+          # else:
+          #   speed = 0
 
           if elapsed_time_segment > 0:
             var_counts = 0
@@ -268,17 +269,18 @@ def download_file(url, filename):
             else:
               speedunit_segment = "Unbekannt"
           else:
-            speed = 0
+            speed_segment = 0
 
-          remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-          remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
+          #remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
+          #remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
+          remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
           active_downloads[filename] = {
   #          "progress": int((downloaded / total_size) * 100) if total_size else 0,
             "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
             "downloaded": downloaded,
-            "speed": round(speed, 2),
+            #"speed": round(speed, 2),
             "speed_segment": round(speed_segment, 2),
-            "speedunit": speedunit,
+            #"speedunit": speedunit,
             "speedunit_segment": speedunit_segment,
             "remaining_time": remaining_time,
             "remaining_time_2": remaining_time_2,
@@ -298,7 +300,8 @@ def start_next_download():
     for char in forbidden_chars:
       filename = filename.replace(char, '_')
 
-    active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed": 0, "speed_segment": 0, "speedunit": "", "speedunit_segment": "", "remaining_time": "", "remaining_time_2": "", "filesize": ""}
+    #active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed": 0, "speed_segment": 0, "speedunit": "", "speedunit_segment": "", "remaining_time": "", "remaining_time_2": "", "filesize": ""}
+    active_downloads[filename] = {"progress": 0, "downloaded": 0, "speed_segment": 0, "speedunit_segment": "", "remaining_time": "", "remaining_time_2": "", "filesize": ""}
     executor.submit(download_file, url, filename)
 
 @app.route("/")
