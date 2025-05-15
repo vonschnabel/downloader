@@ -40,7 +40,7 @@ def extract_filename(url, custom_title):
   parsed_url = urlparse(url)
   original_filename = os.path.basename(parsed_url.path)
   extension = "." + original_filename.split(".")[-1] if "." in original_filename else ""
-
+  extension = extension.lower()
   if extension not in allowed_files:
     return None  # Ungültiger Dateityp
 
