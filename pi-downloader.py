@@ -119,52 +119,62 @@ def download_file(url, filename):
   number_of_segments = 200 #25000
   segment = 0
 
-  with open(file_path, "wb") as file:    
-    for chunk in response.iter_content(chunk_size= 256 * 1024):
-      print(filename,"segment",segment, "(",number_of_segments,")")
-      if cancel_flags[filename].is_set():
+  try:
+    with open(file_path, "wb") as file:    
+      for chunk in response.iter_content(chunk_size= 256 * 1024):
+        print(filename,"segment",segment, "(",number_of_segments,")")
+        if cancel_flags[filename].is_set():
+          print(f"Download für {filename} wurde abgebrochen.")
+          raise Exception("Download canceled")        
+
+        if chunk:
+          file.write(chunk)
+          downloaded += len(chunk)
+          downloaded_segment += len(chunk)
+
+          if segment >= number_of_segments:
+            start_time_segment = time.time()
+            downloaded_segment = len(chunk)
+            segment = 0
+          elapsed_time_segment = time.time() - start_time_segment
+
+          speedunit_segment = ""
+          if elapsed_time_segment > 0:
+            var_counts = 0
+            speed_segment = downloaded_segment / elapsed_time_segment
+            while (speed_segment > 1024) and var_counts < 4:
+              speed_segment = speed_segment / 1024
+              var_counts += 1
+            speedunit_segment = speedunits[var_counts] if var_counts < 4 else "Unbekannt"
+          else:
+            speed_segment = 0
+
+          remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded_segment)
+          active_downloads[filename] = {
+            "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
+            "downloaded": downloaded,
+            "speed_segment": round(speed_segment, 2),
+            "speedunit_segment": speedunit_segment,
+            "remaining_time": remaining_time,
+            "filesize": filesize
+          }
+
+          segment += 1
+        
+  except Exception as e:
+    print(f"Fehler oder Abbruch bei {filename}: {e}")
+    if os.path.exists(file_path):
+      try:
         os.remove(file_path)
-        del active_downloads[filename]
-        start_next_download()
-        return
-
-      if chunk:
-        file.write(chunk)
-        downloaded += len(chunk)
-        downloaded_segment += len(chunk)
-
-        if segment >= number_of_segments:
-          start_time_segment = time.time()
-          downloaded_segment = len(chunk)
-          segment = 0
-        elapsed_time_segment = time.time() - start_time_segment
-
-        speedunit_segment = ""
-        if elapsed_time_segment > 0:
-          var_counts = 0
-          speed_segment = downloaded_segment / elapsed_time_segment
-          while (speed_segment > 1024) and var_counts < 4:
-            speed_segment = speed_segment / 1024
-            var_counts += 1
-          speedunit_segment = speedunits[var_counts] if var_counts < 4 else "Unbekannt"
-        else:
-          speed_segment = 0
-
-        remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded_segment)
-        active_downloads[filename] = {
-          "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
-          "downloaded": downloaded,
-          "speed_segment": round(speed_segment, 2),
-          "speedunit_segment": speedunit_segment,
-          "remaining_time": remaining_time,
-          "filesize": filesize
-        }
-
-        segment += 1
-
-  del active_downloads[filename]
-  del cancel_flags[filename]
-  start_next_download()
+      except Exception as del_error:
+        print(f"Konnte Datei nicht löschen: {del_error}")
+  finally:
+    # Cleanup in jedem Fall
+    if filename in active_downloads:
+      del active_downloads[filename]
+    if filename in cancel_flags:
+      del cancel_flags[filename]
+    start_next_download()
 
 def start_next_download():
   """Startet den nächsten Download aus der Warteschlange, falls Kapazität frei ist."""
