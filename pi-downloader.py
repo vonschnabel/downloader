@@ -71,224 +71,96 @@ def download_file(url, filename):
   """Lädt eine Datei herunter und berechnet die Download-Geschwindigkeit."""
   global active_downloads
   file_path = os.path.join(download_folder, filename)
-
   parsed_url = urlparse(url)
-  if(parsed_url.hostname == "www.mediathek.at"):
+
+  if parsed_url.hostname == "www.mediathek.at":
     html = requests.get(url)
     soup = BeautifulSoup(html.content, 'html.parser')
     audio_tag = soup.find('audio')
     data_src = audio_tag['data-src']
+    url = data_src  # finaler Download-Link von mediathek.at
 
-    if(".mp3" in data_src):
-      headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Referer": "https://www.mediathek.at/"
-      }
+    headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "Referer": "https://www.mediathek.at/"
+    }
 
-    # Schritt 1: Dateigröße bestimmen
-      response = requests.get(data_src, headers={**headers, "Range": "bytes=0-0"})
-      total_size = 0
-      if "Content-Range" in response.headers:
-        total_size = int(response.headers["Content-Range"].split("/")[-1])
-        print(f"Gesamtgröße: {total_size} Bytes")
-      else:
-        print("Server unterstützt keine Range-Anfragen")
-        total_size = None
-
-      speedunits = ["B/s","KB/s","MB/s","GB/s"]
-      filesizeunits = ["B","KB","MB","GB"]
-      filesizeunit = ""
-      filesize = total_size
-      var_counts = 0
-      while((filesize > 1024) and var_counts < 4):
-        filesize = filesize / 1024
-        var_counts += 1
-      if var_counts <= 3:
-        filesizeunit = filesizeunits[var_counts]
-      else:
-        filesizeunit = "Unbekannt"
-      filesize = str(round(filesize,2)) +" " +filesizeunit  
-      downloaded = 0
-      downloaded_segment = 0
-      cancel_flags[filename] = threading.Event()
-      start_time = time.time()
-      #start_time_segment = start_time
-      number_of_segments = 25000
-      segment = 0
-
-      # Schritt 2: Datei in Blöcken herunterladen
-      chunk_size = 1024 * 1024  # 1 MB pro Anfrage
-
-      with open(file_path, "wb") as file:
-        while downloaded < total_size:
-          if cancel_flags[filename].is_set():
-            os.remove(file_path)
-            del active_downloads[filename]
-            start_next_download()
-            return
-
-          start_time_segment = time.time()
-          end = min(downloaded + chunk_size - 1, total_size - 1)
-          headers["Range"] = f"bytes={downloaded}-{end}"
-
-          response = requests.get(data_src, headers=headers, stream=True)
-          if response.status_code in [200, 206]:  # 206 = Partial Content
-            file.write(response.content)
-            downloaded += len(response.content)
-            downloaded_segment = len(response.content)
-            print(f"Heruntergeladen: {downloaded}/{total_size} Bytes")
-
-            elapsed_time = time.time() - start_time
-            #if segment >= number_of_segments:
-            #  start_time_segment = time.time()
-            #  downloaded_segment = len(chunk)
-            #  segment = 0
-            #  print("foo")
-            elapsed_time_segment = time.time() - start_time_segment
-
-            #speedunit = ""
-            speedunit_segment = ""
-            # if elapsed_time > 0:
-            #   var_counts = 0
-            #   speed = (downloaded / elapsed_time)
-            #   while((speed > 1024) and var_counts < 4):
-            #     speed = speed / 1024
-            #     var_counts += 1
-            #   if var_counts <= 3:
-            #     speedunit = speedunits[var_counts]
-            #   else:
-            #     speedunit = "Unbekannt"
-            # else:
-            #   speed = 0
-
-            if elapsed_time_segment > 0:
-              var_counts = 0
-              speed_segment = (downloaded_segment / elapsed_time_segment)
-              while((speed_segment > 1024) and var_counts < 4):
-                speed_segment = speed_segment / 1024
-                var_counts += 1
-              if var_counts <= 3:
-                speedunit_segment = speedunits[var_counts]
-              else:
-                speedunit_segment = "Unbekannt"
-            else:
-              speed_segment = 0
-
-            #remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-            #remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
-            remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
-            active_downloads[filename] = {
-              "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
-              "downloaded": downloaded,
-              #"speed": round(speed, 2),
-              "speed_segment": round(speed_segment, 2),
-              #"speedunit": speedunit,
-              "speedunit_segment": speedunit_segment,
-              "remaining_time": remaining_time,
-              #"remaining_time_2": remaining_time_2,
-              "filesize": filesize
-            }
-
-            segment += 1
-
-
-
-          else:
-            print(f"Fehler: {response.status_code}")
-            break
-
-
+    response = requests.get(url, stream=True, headers={**headers, "Range": "bytes=0-0"}, timeout=10)
+    if "Content-Range" in response.headers:
+      total_size = int(response.headers["Content-Range"].split("/")[-1])
+      #print(f"Gesamtgröße: {total_size} Bytes")      
+      response = requests.get(url, stream=True, headers=headers, timeout=10)
+    else:
+      print("Server unterstützt keine Range-Anfragen")
+      total_size = int(response.headers.get("content-length", 0))
 
   else:
-    response = requests.get(url, stream=True, timeout=10)
-    total_size = int(response.headers.get("content-length", 0))
-    speedunits = ["B/s","KB/s","MB/s","GB/s"]
-    filesizeunits = ["B","KB","MB","GB"]
-    filesizeunit = ""
-    filesize = total_size
-    var_counts = 0
-    while((filesize > 1024) and var_counts < 4):
-      filesize = filesize / 1024
-      var_counts += 1
-    if var_counts <= 3:
-      filesizeunit = filesizeunits[var_counts]
-    else:
-      filesizeunit = "Unbekannt"
-    filesize = str(round(filesize,2)) +" " +filesizeunit  
-    downloaded = 0
-    downloaded_segment = 0
-    cancel_flags[filename] = threading.Event()
-    start_time = time.time()
-    start_time_segment = start_time
-    number_of_segments = 25000
-    segment = 0
+    headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    response = requests.get(url, stream=True, headers=headers, timeout=10)
 
-    with open(file_path, "wb") as file:
-      for chunk in response.iter_content(chunk_size=1024):
-        if cancel_flags[filename].is_set():
-          os.remove(file_path)
-          del active_downloads[filename]
-          start_next_download()
-          return
+  # Gemeinsamer Code ab hier
+  total_size = int(response.headers.get("content-length", 0))
+  speedunits = ["B/s", "KB/s", "MB/s", "GB/s"]
+  filesizeunits = ["B", "KB", "MB", "GB"]
+  filesizeunit = ""
+  filesize = total_size
+  var_counts = 0
+  while (filesize > 1024) and var_counts < 4:
+    filesize = filesize / 1024
+    var_counts += 1
+  filesizeunit = filesizeunits[var_counts] if var_counts < 4 else "Unbekannt"
+  filesize = str(round(filesize, 2)) + " " + filesizeunit
+  downloaded = 0
+  downloaded_segment = 0
+  cancel_flags[filename] = threading.Event()
+  start_time_segment = time.time()
+  number_of_segments = 200 #25000
+  segment = 0
 
-        if chunk:
-          file.write(chunk)
-          downloaded += len(chunk)
-          downloaded_segment += len(chunk)
+  with open(file_path, "wb") as file:    
+    for chunk in response.iter_content(chunk_size= 256 * 1024):
+      print(filename,"segment",segment, "(",number_of_segments,")")
+      if cancel_flags[filename].is_set():
+        os.remove(file_path)
+        del active_downloads[filename]
+        start_next_download()
+        return
 
-          elapsed_time = time.time() - start_time
-          if segment >= number_of_segments:
-            start_time_segment = time.time()
-            downloaded_segment = len(chunk)
-            segment = 0
-            print("foo")
-          elapsed_time_segment = time.time() - start_time_segment
-  #        speed = (downloaded / elapsed_time) / 1024 if elapsed_time > 0 else 0  # KB/s        
-          #speedunit = ""
-          speedunit_segment = ""
-          # if elapsed_time > 0:
-          #   var_counts = 0
-          #   speed = (downloaded / elapsed_time)
-          #   while((speed > 1024) and var_counts < 4):
-          #     speed = speed / 1024
-          #     var_counts += 1
-          #   if var_counts <= 3:
-          #     speedunit = speedunits[var_counts]
-          #   else:
-          #     speedunit = "Unbekannt"
-          # else:
-          #   speed = 0
+      if chunk:
+        file.write(chunk)
+        downloaded += len(chunk)
+        downloaded_segment += len(chunk)
 
-          if elapsed_time_segment > 0:
-            var_counts = 0
-            speed_segment = (downloaded_segment / elapsed_time_segment)
-            while((speed_segment > 1024) and var_counts < 4):
-              speed_segment = speed_segment / 1024
-              var_counts += 1
-            if var_counts <= 3:
-              speedunit_segment = speedunits[var_counts]
-            else:
-              speedunit_segment = "Unbekannt"
-          else:
-            speed_segment = 0
+        if segment >= number_of_segments:
+          start_time_segment = time.time()
+          downloaded_segment = len(chunk)
+          segment = 0
+        elapsed_time_segment = time.time() - start_time_segment
 
-          #remaining_time = calculate_remaining_time(speed, speedunit, total_size, downloaded)
-          #remaining_time_2 = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
-          remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded)
-          active_downloads[filename] = {
-  #          "progress": int((downloaded / total_size) * 100) if total_size else 0,
-            "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
-            "downloaded": downloaded,
-            #"speed": round(speed, 2),
-            "speed_segment": round(speed_segment, 2),
-            #"speedunit": speedunit,
-            "speedunit_segment": speedunit_segment,
-            "remaining_time": remaining_time,
-            "remaining_time_2": remaining_time_2,
-            "filesize": filesize
-          }
+        speedunit_segment = ""
+        if elapsed_time_segment > 0:
+          var_counts = 0
+          speed_segment = downloaded_segment / elapsed_time_segment
+          while (speed_segment > 1024) and var_counts < 4:
+            speed_segment = speed_segment / 1024
+            var_counts += 1
+          speedunit_segment = speedunits[var_counts] if var_counts < 4 else "Unbekannt"
+        else:
+          speed_segment = 0
 
-          segment += 1
+        remaining_time = calculate_remaining_time(speed_segment, speedunit_segment, total_size, downloaded_segment)
+        active_downloads[filename] = {
+          "progress": round((downloaded / total_size) * 100, 2) if total_size else 0,
+          "downloaded": downloaded,
+          "speed_segment": round(speed_segment, 2),
+          "speedunit_segment": speedunit_segment,
+          "remaining_time": remaining_time,
+          "filesize": filesize
+        }
+
+        segment += 1
 
   del active_downloads[filename]
   del cancel_flags[filename]
