@@ -1,4 +1,5 @@
 import os
+import psutil
 import requests
 import time
 from flask import Flask, render_template, request, jsonify, send_from_directory, render_template
@@ -348,6 +349,62 @@ def status():
   return jsonify({
     "queue": [{"filename": entry[1], "url": entry[0]} for entry in download_queue],
     "active": active_downloads
+  })
+
+@app.route("/systemstat")
+def systemstat():
+  cpu_last = psutil.cpu_percent(interval=1)
+  ram = psutil.virtual_memory()
+  ram_total = ram.total / (1024 ** 2)
+  ram_total = round(ram_total,2)
+  ram_used = ram.used / (1024 ** 2)
+  ram_used = round(ram_used,2)
+  ram_available = ram.available / (1024 ** 2)
+  ram_available = round(ram_available,2)
+  ram_percent = ram.percent
+
+  script_path = os.path.abspath(__file__)
+  script_dir = os.path.dirname(script_path)
+
+  statvfs = os.statvfs(script_dir)
+  free_storage = statvfs.f_bavail * statvfs.f_frsize
+  total_storage = statvfs.f_blocks * statvfs.f_frsize
+
+  filesizeunits = ["B","KB","MB","GB"]
+  filesizeunit_total = ""
+  total_storage_unit = total_storage
+  var_counts = 0
+  while((total_storage_unit > 1024) and var_counts < 4):
+    total_storage_unit = total_storage_unit / 1024
+    var_counts += 1
+  if var_counts <= 3:
+    filesizeunit_total = filesizeunits[var_counts]
+  else:
+    filesizeunit_total = "Unbekannt"
+  total_storage_unit = str(round(total_storage_unit,2)) +" " +filesizeunit_total
+  
+  filesizeunit_free = ""
+  free_storage_unit = free_storage
+  var_counts = 0
+  while((free_storage_unit > 1024) and var_counts < 4):
+    free_storage_unit = free_storage_unit / 1024
+    var_counts += 1
+  if var_counts <= 3:
+    filesizeunit_free = filesizeunits[var_counts]
+  else:
+    filesizeunit_free = "Unbekannt"
+  free_storage_unit = str(round(free_storage_unit,2)) +" " +filesizeunit_free
+  
+  return jsonify({
+    "free_storage": free_storage,
+    "total_storage": total_storage,
+    "free_storage_unit": free_storage_unit,
+    "total_storage_unit": total_storage_unit,
+    "cpu_last": cpu_last,
+    "ram_total": ram_total,
+    "ram_used": ram_used,
+    "ram_available": ram_available,
+    "ram_percent": ram_percent
   })
 
 @app.route("/remove", methods=["POST"])

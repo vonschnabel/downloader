@@ -45,6 +45,30 @@
       });
     }
 
+    function updateSystemStat() {
+      fetch("/systemstat")
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        let storageContainer = document.getElementById("storage");
+        let free_storage_unit = data.free_storage_unit;
+        let total_storage_unit = data.total_storage_unit;
+        let free_storage = data.free_storage;
+        let total_storage = data.total_storage;        
+        let percentage = (total_storage - free_storage) / total_storage * 100;
+        percentage = parseFloat(percentage.toFixed(2));
+        storageContainer.innerHTML = `${free_storage_unit} (free) / ${total_storage_unit} (total) - ${percentage} % (used)`;
+
+        let systemContainer = document.getElementById("system");
+        let cpu_last = data.cpu_last;
+        let ram_total = data.ram_total;
+        let ram_used = data.ram_used;
+        let ram_available = data.ram_available;
+        let ram_percent = data.ram_percent;
+        systemContainer.innerHTML = `CPU ${cpu_last} % - RAM ${ram_used} MB / ${ram_total} MB (${ram_percent} %)`;
+      });
+    }
+
     function updateStatus() {
     fetch("/status")
       .then(response => response.json())
@@ -79,7 +103,7 @@
           progressContainer.appendChild(div);
         });
       });
-  }
+    }
 
     function removeFromQueue(filename) {
       fetch("/remove", {
@@ -106,10 +130,13 @@
     }
 
     setInterval(updateStatus, 2000);
+    setInterval(updateSystemStat, 10000);
   </script>
 </head>
 <body>
   <h1>File Downloader</h1>
+  <div id="storage"></div>
+  <div id="system"></div>
   <a href="/downloads">Downloads</a>  <br><br>
   <div id="input-container">
     <div class="input-row">
