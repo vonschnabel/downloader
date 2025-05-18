@@ -235,7 +235,7 @@ def status():
 
 @app.route("/systemstat")
 def systemstat():
-  cpu_last = psutil.cpu_percent(interval=1)
+  cpu_last = psutil.cpu_percent(interval=0)
   ram = psutil.virtual_memory()
   ram_total = ram.total / (1024 ** 2)
   ram_total = round(ram_total,2)
@@ -327,5 +327,5 @@ def downloads_page():
   files = sorted(os.listdir(download_folder))
   return render_template("files.html", files=files)
 
-if __name__ == "__main__":
-  app.run(host="0.0.0.0", port=5000, debug=True)
+if __name__ == "__main__":  
+  app.run(host="0.0.0.0", port=5000)
